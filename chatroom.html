@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room V1</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: url('Asset/main.jpg') no-repeat center center/cover;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .chat-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            color: white;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        #chat-box {
+            height: 450px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .message {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .bubble {
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            color: white;
+        }
+        .bubble.user {
+            background: linear-gradient(45deg, #007bff, #00c3ff);
+            align-self: flex-end;
+        }
+        .bubble.other {
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+            align-self: flex-start;
+        }
+        .watermark {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h2 class="text-center">Chat Room V1</h2>
+        <div id="chat-box" class="border p-3"></div>
+        <input id="message" type="text" class="form-control mt-3" placeholder="Ketik pesan...">
+        <button onclick="sendMessage()" class="btn btn-primary w-100 mt-2">Kirim</button>
+        <button onclick="logout()" class="btn btn-danger w-100 mt-2">Keluar</button>
+        <button onclick="toggleBacksound()" class="btn btn-secondary w-100 mt-2">🎵 Play/Pause Musik</button>
+
+        <!-- Watermark dalam chat-container -->
+        <p style="text-align: center; color: white; font-size: 12px; margin-top: 10px;">
+            Dibuat oleh <strong>isaditem</strong>
+        </p>
+    </div>
+
+    <audio id="backsound" loop>
+        <source src="Asset/music2.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sendSound">
+        <source src="Asset/notif.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="receiveSound">
+        <source src="Asset/notif.mp3" type="audio/mpeg">
+    </audio>
+
+    <script type="module">
+        import { db, collection, addDoc, query, orderBy, onSnapshot } from "./script.js";
+
+        const avatars = [
+            "Asset/cat.png",
+            "Asset/chicken.png",
+            "Asset/dog.png"
+        ];
+
+        function loadMessages() {
+            const chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML = "";
+
+            const q = query(collection(db, "messages"), orderBy("timestamp"));
+            onSnapshot(q, (snapshot) => {
+                let isNewMessage = chatBox.scrollHeight - chatBox.scrollTop === chatBox.clientHeight;
+
+                chatBox.innerHTML = "";
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    displayMessage(data.username, data.message, data.avatar);
+                });
+
+                if (isNewMessage) {
+                    document.getElementById("receiveSound").play();
+                }
+            });
+        }
+
+        function displayMessage(username, message, avatar) {
+            if (!avatar || !avatar.startsWith("Asset/")) {
+                avatar = "Asset/cat.png"; // Avatar default jika tidak valid
+            }
+
+            const chatBox = document.getElementById("chat-box");
+            const msgDiv = document.createElement("div");
+            msgDiv.classList.add("message");
+
+            const img = document.createElement("img");
+            img.src = avatar;
+            img.classList.add("avatar");
+
+            const msgBubble = document.createElement("div");
+            msgBubble.classList.add("bubble");
+            msgBubble.innerHTML = `<strong>${username}:</strong> ${message}`;
+
+            if (username === localStorage.getItem("username")) {
+                msgBubble.classList.add("user");
+                msgDiv.style.justifyContent = "flex-end";
+            } else {
+                msgBubble.classList.add("other");
+                msgDiv.style.justifyContent = "flex-start";
+            }
+
+            msgDiv.appendChild(img);
+            msgDiv.appendChild(msgBubble);
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById("message").value.trim();
+            if (!messageInput) return;
+
+            const username = localStorage.getItem("username") || "Anon";
+            let avatar = localStorage.getItem("avatar");
+
+            if (!avatar || !avatar.startsWith("Asset/")) {
+                avatar = avatars[Math.floor(Math.random() * avatars.length)];
+                localStorage.setItem("avatar", avatar);
+            }
+
+            try {
+                await addDoc(collection(db, "messages"), {
+                    username,
+                    message: messageInput,
+                    avatar,
+                    timestamp: new Date()
+                });
+
+                document.getElementById("sendSound").play();
+                document.getElementById("message").value = "";
+            } catch (error) {
+                console.error("Gagal mengirim pesan:", error);
+            }
+        }
+
+        let isPlaying = false;
+        const audio = document.getElementById("backsound");
+
+        function toggleBacksound() {
+            if (isPlaying) {
+                audio.pause();
+            } else {
+                audio.play();
+            }
+            isPlaying = !isPlaying;
+        }
+
+        window.onload = () => {
+            if (!localStorage.getItem("username")) {
+                window.location.href = "index.html";
+            } else {
+                loadMessages();
+            }
+        };
+
+        function logout() {
+            localStorage.removeItem("username");
+            localStorage.removeItem("avatar");
+            window.location.href = "index.html";
+        }
+
+        window.logout = logout;
+        window.sendMessage = sendMessage;
+        window.toggleBacksound = toggleBacksound;
+    </script>
+
+    <!-- Watermark pojok kanan bawah -->
+    <div class="watermark">Dibuat oleh isaditem</div>
+
+    <!-- Footer -->
+    <footer style="position: absolute; bottom: 10px; color: white; font-size: 14px; text-align: center; width: 100%;">
+        Dibuat oleh <strong>isaditem</strong>
+    </footer>
+</body>
+</html>

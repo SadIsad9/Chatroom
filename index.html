@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Login - Chat Room v1</title>
+
+    <!-- Meta SEO -->
+    <meta name="description" content="Masuk ke Chat Room v1 dan ngobrol dengan teman-teman secara real-time!">
+    <meta name="keywords" content="chat room, chat online, ngobrol seru, komunitas online, Chat Room v1">
+    <meta name="author" content="Chat Room v1">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph (untuk sosial media) -->
+    <meta property="og:title" content="Chat Room v1 - Tempat Ngobrol Online Seru!">
+    <meta property="og:description" content="Bergabunglah dengan Chat Room v1 dan ngobrol seru dengan pengguna lainnya!">
+    <meta property="og:image" content="https://yourwebsite.com/Asset/login.jpg">
+    <meta property="og:url" content="https://yourwebsite.com">
+    <meta property="og:type" content="website">
+
+    <!-- Schema Markup (JSON-LD) untuk meningkatkan visibilitas di Google -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "Chat Room v1",
+        "url": "https://yourwebsite.com",
+        "description": "Tempat ngobrol online dengan teman-teman baru. Bergabung sekarang di Chat Room v1!",
+        "image": "https://yourwebsite.com/Asset/login.jpg",
+        "author": {
+            "@type": "Organization",
+            "name": "Chat Room v1"
+        }
+    }
+    </script>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Script Login -->
+    <script src="script.js" type="module"></script>
+    <script type="module">
+        import { db, collection, getDocs } from "./script.js";
+
+        async function loginUser() {
+            const username = document.getElementById("username").value.trim();
+            const token = document.getElementById("token").value.trim();
+
+            if (!username || !token) {
+                alert("Masukkan username dan token!");
+                return;
+            }
+
+            const usersRef = collection(db, "users");
+            const querySnapshot = await getDocs(usersRef);
+            let userData = null;
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.username === username && data.token === token) {
+                    userData = data;
+                }
+            });
+
+            if (userData) {
+                localStorage.setItem("username", username);
+                localStorage.setItem("isAdmin", userData.isAdmin || false);  
+
+                if (userData.isAdmin) {
+                    window.location.href = "admin.html";  
+                } else {
+                    window.location.href = "chatroom.html";  
+                }
+            } else {
+                alert("Username atau token salah!");
+            }
+        }
+
+        window.loginUser = loginUser;
+    </script>
+
+    <style>
+        body {
+            background: url('Asset/login.jpg') no-repeat center center/cover;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            color: white;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        h1 {
+            font-size: 26px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 10px rgba(255, 255, 255, 0.7);
+        }
+
+        input {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            text-align: center;
+            box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.2);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        button {
+            background: linear-gradient(45deg, #007bff, #00c3ff);
+            border: none;
+            font-size: 16px;
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+            transition: 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(0, 195, 255, 0.8);
+        }
+
+        p {
+            margin-top: 10px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        a {
+            color: #00c3ff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Login ke Chat Room v1</h1>
+        <input id="username" type="text" class="form-control mb-3" placeholder="Masukkan Username">
+        <input id="token" type="text" class="form-control mb-3" placeholder="Masukkan Token">
+        <button onclick="loginUser()" class="btn w-100">Login</button>
+        <p>Belum punya akun? <a href="register.html">Daftar di sini</a></p>
+    </div>
+</body>
+</html>
