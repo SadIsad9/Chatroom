@@ -225,28 +225,13 @@
             window.location.href = "index.html";
         }
         
-        // Mendengarkan pesan baru di chat room
-        
-        
-        function listenToChat() {
-    onSnapshot(collection(db, "messages"), (snapshot) => {
-        const chatBox = document.getElementById("chatBox");
-        chatBox.innerHTML = ""; 
-        
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            
-            // Jika pesan dari ADMIN, munculkan notif mengambang
-            if (data.username === "ADMIN") {
-                showAdminNotif(data.message);
+        function listenToAdminNotif() {
+    onSnapshot(collection(db, "admin_notif"), (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+                showAdminNotif(change.doc.data().message);
             }
-            
-            chatBox.innerHTML += `<div class="message">
-                <strong>${data.username}</strong>: ${data.message}
-            </div>`;
         });
-
-        chatBox.scrollTop = chatBox.scrollHeight;
     });
 }
 
@@ -257,19 +242,14 @@ function showAdminNotif(message) {
     notif.style.animation = "none"; // Reset animasi biar bisa diulang
     void notif.offsetWidth; // Trigger reflow
     notif.style.animation = "slideNotif 5s linear";
+
+    // Hilangkan notif setelah animasi selesai
+    setTimeout(() => {
+        notif.innerText = "";
+    }, 5000);
 }
 
-
-// Fungsi menampilkan notifikasi admin
-function showAdminNotif(message) {
-    const notifBox = document.createElement("div");
-    notifBox.classList.add("admin-notif");
-    notifBox.innerText = `📢 Admin: ${message}`;
-    
-    document.body.appendChild(notifBox);
-    setTimeout(() => notifBox.remove(), 5000); // Hilang setelah 5 detik
-}
-
+        listenToAdminNotif();
         window.logout = logout;
         window.sendMessage = sendMessage;
         window.toggleBacksound = toggleBacksound;
