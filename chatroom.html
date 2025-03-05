@@ -63,11 +63,33 @@
             color: rgba(255, 255, 255, 0.5);
             pointer-events: none;
         }
+        .admin-notif {
+    position: fixed;
+    top: 20px;
+    left: -100%; /* Awalnya di luar layar */
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 18px;
+    font-weight: bold;
+    white-space: nowrap;
+    animation: slideNotif 5s linear;
+    z-index: 9999;
+}
+
+    @keyframes slideNotif {
+    0% { left: -100%; }
+    10% { left: 10px; }  /* Muncul */
+    90% { left: 10px; }  /* Tetap di posisi */
+    100% { left: 100%; } /* Pergi ke kanan */
+}
     </style>
 </head>
 <body>
     <div class="chat-container">
         <h2 class="text-center">Chat Room V1</h2>
+        <div id="adminNotif" class="admin-notif"></div>
         <div id="chat-box" class="border p-3"></div>
         <input id="message" type="text" class="form-control mt-3" placeholder="Ketik pesan...">
         <button onclick="sendMessage()" class="btn btn-primary w-100 mt-2">Kirim</button>
@@ -87,8 +109,11 @@
         <source src="Asset/notif.mp3" type="audio/mpeg">
     </audio>
 
+        <p style="text-align: center; color: white; font-size: 12px; margin-top: 10px;">
+            Dibuat oleh <strong>isaditem</strong>
+        </p>
     <script type="module">
-        import { db, collection, addDoc, query, orderBy, onSnapshot } from "./script.js";
+        import { db, collection, addDoc, query, orderBy, onSnapshot} from "./script.js";
 
         const avatars = [
             "Asset/cat.png",
@@ -199,6 +224,51 @@
             localStorage.removeItem("avatar");
             window.location.href = "index.html";
         }
+        
+        // Mendengarkan pesan baru di chat room
+        
+        
+        function listenToChat() {
+    onSnapshot(collection(db, "messages"), (snapshot) => {
+        const chatBox = document.getElementById("chatBox");
+        chatBox.innerHTML = ""; 
+        
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            
+            // Jika pesan dari ADMIN, munculkan notif mengambang
+            if (data.username === "ADMIN") {
+                showAdminNotif(data.message);
+            }
+            
+            chatBox.innerHTML += `<div class="message">
+                <strong>${data.username}</strong>: ${data.message}
+            </div>`;
+        });
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+}
+
+// Fungsi buat nampilin notif admin
+function showAdminNotif(message) {
+    const notif = document.getElementById("adminNotif");
+    notif.innerText = message;
+    notif.style.animation = "none"; // Reset animasi biar bisa diulang
+    void notif.offsetWidth; // Trigger reflow
+    notif.style.animation = "slideNotif 5s linear";
+}
+
+
+// Fungsi menampilkan notifikasi admin
+function showAdminNotif(message) {
+    const notifBox = document.createElement("div");
+    notifBox.classList.add("admin-notif");
+    notifBox.innerText = `📢 Admin: ${message}`;
+    
+    document.body.appendChild(notifBox);
+    setTimeout(() => notifBox.remove(), 5000); // Hilang setelah 5 detik
+}
 
         window.logout = logout;
         window.sendMessage = sendMessage;
@@ -207,9 +277,7 @@
 
     <!-- Watermark pojok kanan bawah -->
     <div class="watermark">Dibuat oleh isaditem</div>
-    <p style="text-align: center; color: white; font-size: 12px; margin-top: 10px;">
-            Dibuat oleh <strong>isaditem</strong>
-        </p>
+
     <!-- Footer -->
     <footer style="position: absolute; bottom: 10px; color: white; font-size: 14px; text-align: center; width: 100%;">
         Dibuat oleh <strong>isaditem</strong>
